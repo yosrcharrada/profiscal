@@ -1,0 +1,1032 @@
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>FiscalPRO — Plateforme Fiscale Tunisienne</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+/* ═══════════════════════════════════════════════════════════════════
+   TOKENS & RESET
+═══════════════════════════════════════════════════════════════════ */
+:root {
+  --navy:      #0B1F4B;
+  --blue:      #0D3A8F;
+  --sky:       #1565C0;
+  --accent:    #D4A017;
+  --gold:      #F0C040;
+  --red:       #C62828;
+  --green:     #1B5E20;
+  --purple:    #4527A0;
+  --teal:      #00695C;
+  --white:     #FFFFFF;
+  --off:       #F5F7FA;
+  --border:    #DDE3EE;
+  --muted:     #8A94A8;
+  --text:      #1C2437;
+  --card-shadow: 0 2px 12px rgba(11,31,75,.08);
+  --radius:    6px;
+  --nav-h:     54px;
+  --sidebar-w: 260px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:14px;scroll-behavior:smooth}
+body{font-family:'DM Sans',sans-serif;background:var(--off);color:var(--text);min-height:100vh}
+button{cursor:pointer;border:none;outline:none;font-family:inherit}
+input,textarea{font-family:inherit;outline:none}
+a{text-decoration:none;color:inherit}
+ul{list-style:none}
+
+/* ═══════════════════════════════════════════════════════════════════
+   TOP NAVBAR
+═══════════════════════════════════════════════════════════════════ */
+.navbar{
+  position:fixed;top:0;left:0;right:0;z-index:1000;
+  height:var(--nav-h);
+  background:linear-gradient(90deg,var(--navy) 0%,var(--blue) 60%,var(--sky) 100%);
+  border-bottom:3px solid var(--accent);
+  display:flex;align-items:center;padding:0 20px;gap:0;
+}
+.nav-brand{
+  font-family:'Playfair Display',serif;
+  font-size:18px;font-weight:700;color:var(--white);
+  letter-spacing:.3px;white-space:nowrap;padding-right:28px;
+  border-right:1px solid rgba(255,255,255,.2);
+}
+.nav-brand span{color:var(--gold)}
+.nav-links{display:flex;align-items:center;gap:2px;padding-left:16px;flex:1}
+.nav-link{
+  color:rgba(255,255,255,.82);font-size:12.5px;font-weight:500;
+  padding:6px 14px;border-radius:4px;transition:.15s;white-space:nowrap;
+}
+.nav-link:hover,.nav-link.active{background:rgba(255,255,255,.12);color:#fff}
+.nav-link.active{border-bottom:2px solid var(--gold)}
+.nav-right{display:flex;align-items:center;gap:10px;margin-left:auto}
+.nav-badge{
+  font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;
+  background:var(--accent);color:var(--navy);letter-spacing:.3px;
+}
+.status-dot{
+  width:8px;height:8px;border-radius:50%;
+  background:#4CAF50;border:2px solid rgba(255,255,255,.4);
+  display:inline-block;
+}
+.status-dot.red{background:#ef5350}
+
+/* ═══════════════════════════════════════════════════════════════════
+   LAYOUT SHELL
+═══════════════════════════════════════════════════════════════════ */
+.shell{display:flex;padding-top:var(--nav-h);min-height:100vh}
+
+/* ── Sidebar ── */
+.sidebar{
+  width:var(--sidebar-w);flex-shrink:0;
+  background:var(--white);border-right:1px solid var(--border);
+  position:fixed;top:var(--nav-h);bottom:0;left:0;
+  overflow-y:auto;padding:0;
+}
+.sidebar::-webkit-scrollbar{width:4px}
+.sidebar::-webkit-scrollbar-thumb{background:#dde3ee;border-radius:4px}
+
+.sb-section{padding:16px 16px 8px}
+.sb-title{
+  font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;
+  color:var(--muted);margin-bottom:10px;padding-bottom:6px;
+  border-bottom:1px solid var(--border);
+}
+.sb-filter-label{font-size:12px;font-weight:600;color:var(--text);margin-bottom:4px;display:block}
+.sb-select{
+  width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius);
+  font-size:12px;color:var(--text);background:var(--off);appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24'%3E%3Cpath fill='%238A94A8' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 8px center;
+  cursor:pointer;margin-bottom:10px;
+}
+.sb-select:focus{border-color:var(--sky);box-shadow:0 0 0 2px rgba(13,58,143,.1)}
+
+.stat-card{
+  background:var(--off);border:1px solid var(--border);border-radius:var(--radius);
+  padding:10px 12px;margin-bottom:8px;
+}
+.stat-card-label{font-size:11px;color:var(--muted);margin-bottom:2px}
+.stat-card-val{font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:500;color:var(--navy)}
+
+.doc-type-bar{
+  display:flex;align-items:center;gap:8px;padding:6px 8px;
+  border-radius:var(--radius);margin-bottom:4px;cursor:default;
+}
+.doc-type-bar:hover{background:var(--off)}
+.doc-type-icon{font-size:14px;width:22px;text-align:center}
+.doc-type-label{font-size:12px;flex:1;font-weight:500}
+.doc-type-count{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted)}
+
+.sb-chip-list{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px}
+.sb-chip{
+  font-size:11px;padding:3px 9px;border-radius:20px;
+  background:var(--off);border:1px solid var(--border);
+  color:var(--text);cursor:pointer;transition:.12s;font-weight:500;
+}
+.sb-chip:hover{background:var(--blue);color:#fff;border-color:var(--blue)}
+
+/* ── Main content ── */
+.main-content{
+  margin-left:var(--sidebar-w);flex:1;padding:24px 28px;
+  min-height:calc(100vh - var(--nav-h));
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   TAB SWITCHER
+═══════════════════════════════════════════════════════════════════ */
+.tab-bar{
+  display:flex;gap:0;margin-bottom:20px;
+  border:1px solid var(--border);border-radius:8px;
+  background:var(--white);padding:4px;width:fit-content;
+  box-shadow:var(--card-shadow);
+}
+.tab-btn{
+  padding:8px 22px;border-radius:5px;font-size:13px;font-weight:600;
+  color:var(--muted);background:transparent;transition:.15s;letter-spacing:.2px;
+  display:flex;align-items:center;gap:7px;
+}
+.tab-btn.active{background:var(--navy);color:#fff;box-shadow:0 2px 6px rgba(11,31,75,.25)}
+.tab-btn:hover:not(.active){background:var(--off);color:var(--text)}
+
+/* ═══════════════════════════════════════════════════════════════════
+   SEARCH ENGINE PANEL
+═══════════════════════════════════════════════════════════════════ */
+.search-box{
+  background:var(--white);border:1px solid var(--border);border-radius:8px;
+  padding:20px;margin-bottom:18px;box-shadow:var(--card-shadow);
+}
+.search-row{display:flex;gap:10px;align-items:center}
+.search-input{
+  flex:1;padding:11px 16px;border:2px solid var(--border);border-radius:var(--radius);
+  font-size:14px;color:var(--text);background:var(--off);transition:.15s;
+}
+.search-input:focus{border-color:var(--sky);background:#fff;box-shadow:0 0 0 3px rgba(13,58,143,.08)}
+.search-input::placeholder{color:var(--muted)}
+.btn-primary{
+  padding:10px 22px;background:linear-gradient(135deg,var(--navy),var(--sky));
+  color:#fff;font-size:13px;font-weight:600;border-radius:var(--radius);
+  letter-spacing:.3px;transition:.15s;white-space:nowrap;
+  box-shadow:0 2px 8px rgba(11,31,75,.25);
+}
+.btn-primary:hover{box-shadow:0 4px 14px rgba(11,31,75,.35);transform:translateY(-1px)}
+.btn-primary:active{transform:translateY(0)}
+.search-hint{font-size:11px;color:var(--muted);margin-top:7px}
+
+/* Year range */
+.year-row{display:flex;align-items:center;gap:10px;margin-top:10px}
+.year-label{font-size:12px;color:var(--muted);white-space:nowrap}
+.year-input{
+  width:75px;padding:6px 8px;border:1px solid var(--border);border-radius:4px;
+  font-size:12px;color:var(--text);background:var(--off);
+}
+
+/* Results metrics */
+.metrics-row{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.metric-pill{
+  background:var(--white);border:1px solid var(--border);border-radius:20px;
+  padding:5px 14px;font-size:12px;color:var(--text);
+}
+.metric-pill b{color:var(--navy)}
+
+/* Result card */
+.result-card{
+  background:var(--white);border:1px solid var(--border);border-radius:var(--radius);
+  padding:15px 18px;margin-bottom:10px;transition:.15s;
+  border-left:4px solid transparent;
+}
+.result-card.top{border-left-color:var(--sky)}
+.result-card.rest{border-left-color:var(--border)}
+.result-card:hover{box-shadow:0 4px 16px rgba(11,31,75,.1)}
+
+.card-row{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:7px}
+.card-rank{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);margin-right:8px;flex-shrink:0}
+.card-title{font-size:14px;font-weight:700;color:var(--navy);flex:1;line-height:1.4}
+.card-score-badge{
+  font-family:'JetBrains Mono',monospace;font-size:11px;
+  background:#E8F0FB;color:var(--sky);padding:3px 9px;border-radius:10px;
+  white-space:nowrap;margin-left:12px;flex-shrink:0;
+}
+.tags-row{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px}
+.tag{font-size:10px;font-weight:700;padding:2px 8px;border-radius:2px;text-transform:uppercase;letter-spacing:.5px}
+.tag-loi{background:#DBEAFE;color:#1E40AF}
+.tag-note{background:#DCFCE7;color:#166534}
+.tag-article{background:#FEF3C7;color:#92400E}
+.tag-section{background:#F3E8FF;color:#6B21A8}
+.tag-table{background:#F0FDF4;color:#15803D}
+.tag-other{background:#F1F5F9;color:#475569}
+
+.snippet{font-size:13px;color:#374151;line-height:1.75;border-top:1px solid #F0F4F8;padding-top:8px}
+.snippet em{background:#FEF08A;color:#000;font-style:normal;padding:1px 2px;border-radius:2px}
+.score-track{background:#E5E7EB;border-radius:3px;height:3px;margin-top:8px}
+.score-fill{background:linear-gradient(90deg,var(--sky),var(--gold));border-radius:3px;height:3px}
+.card-meta{font-size:11px;color:var(--muted);margin-top:7px}
+
+.section-divider{
+  text-align:center;padding:14px 0 10px;color:var(--muted);font-size:11px;
+  font-weight:700;letter-spacing:2px;text-transform:uppercase;
+  border-top:1px dashed var(--border);margin:4px 0;
+}
+.show-more-btn{
+  width:100%;padding:10px;background:var(--off);border:1px solid var(--border);
+  border-radius:var(--radius);font-size:12px;font-weight:600;color:var(--muted);
+  cursor:pointer;transition:.15s;margin-bottom:12px;
+}
+.show-more-btn:hover{background:var(--border);color:var(--text)}
+
+/* ═══════════════════════════════════════════════════════════════════
+   CHATBOT PANEL
+═══════════════════════════════════════════════════════════════════ */
+.chat-layout{display:grid;grid-template-columns:1fr 320px;gap:18px;align-items:start}
+
+.chat-main{background:var(--white);border:1px solid var(--border);border-radius:8px;
+  box-shadow:var(--card-shadow);overflow:hidden;display:flex;flex-direction:column;}
+
+.chat-header{
+  background:linear-gradient(135deg,var(--navy),var(--blue));
+  padding:14px 20px;display:flex;align-items:center;gap:10px;
+}
+.chat-header-icon{font-size:18px}
+.chat-header-title{font-family:'Playfair Display',serif;font-size:15px;font-weight:600;color:#fff}
+.chat-header-sub{font-size:11px;color:rgba(255,255,255,.7);margin-top:1px}
+
+.chat-messages{
+  flex:1;overflow-y:auto;padding:16px;min-height:320px;max-height:480px;
+  background:#FAFBFD;
+}
+.chat-messages::-webkit-scrollbar{width:4px}
+.chat-messages::-webkit-scrollbar-thumb{background:#dde3ee;border-radius:4px}
+
+.msg{display:flex;gap:10px;margin-bottom:14px;animation:fadeUp .25s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.msg.user{flex-direction:row-reverse}
+.msg-avatar{
+  width:32px;height:32px;border-radius:50%;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:14px;
+  font-weight:700;font-family:'JetBrains Mono',monospace;
+}
+.msg.user .msg-avatar{background:linear-gradient(135deg,var(--sky),var(--navy));color:#fff}
+.msg.bot  .msg-avatar{background:linear-gradient(135deg,var(--accent),var(--gold));color:var(--navy)}
+.msg-bubble{
+  max-width:82%;padding:10px 14px;border-radius:8px;font-size:13px;line-height:1.65;
+}
+.msg.user .msg-bubble{background:linear-gradient(135deg,var(--navy),var(--sky));color:#fff;border-radius:8px 2px 8px 8px}
+.msg.bot  .msg-bubble{background:var(--white);border:1px solid var(--border);color:var(--text);border-radius:2px 8px 8px 8px}
+
+.msg-meta{font-size:10px;color:var(--muted);margin-top:4px;text-align:right}
+.msg.bot .msg-meta{text-align:left}
+
+.chat-input-area{padding:14px 16px;border-top:1px solid var(--border);background:var(--white)}
+.chat-input-row{display:flex;gap:8px}
+.chat-input{
+  flex:1;padding:10px 14px;border:1.5px solid var(--border);border-radius:var(--radius);
+  font-size:13px;resize:none;transition:.15s;
+}
+.chat-input:focus{border-color:var(--sky);box-shadow:0 0 0 3px rgba(13,58,143,.08)}
+.chat-send-btn{
+  padding:10px 18px;background:linear-gradient(135deg,var(--navy),var(--sky));
+  color:#fff;font-size:13px;font-weight:600;border-radius:var(--radius);transition:.15s;
+}
+.chat-send-btn:hover{box-shadow:0 3px 10px rgba(11,31,75,.3)}
+.chat-send-btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* Source panel */
+.sources-panel{background:var(--white);border:1px solid var(--border);border-radius:8px;
+  box-shadow:var(--card-shadow);overflow:hidden;}
+.sources-header{
+  background:var(--off);border-bottom:1px solid var(--border);
+  padding:12px 16px;font-size:12px;font-weight:700;color:var(--navy);letter-spacing:.3px;
+}
+.sources-body{padding:12px;max-height:580px;overflow-y:auto}
+.source-item{
+  border-left:3px solid var(--border);padding:8px 10px;margin-bottom:8px;
+  border-radius:0 4px 4px 0;background:var(--off);cursor:pointer;transition:.15s;
+}
+.source-item:hover{background:#EEF2FF;border-left-color:var(--sky)}
+.source-item.loi{border-left-color:var(--red)}
+.source-item.note{border-left-color:var(--sky)}
+.source-item.code{border-left-color:var(--green)}
+.source-item.convention{border-left-color:var(--purple)}
+.source-doc{font-size:11px;font-weight:700;color:var(--navy)}
+.source-preview{font-size:11px;color:var(--muted);margin-top:2px;line-height:1.4;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:280px}
+.source-badge{font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px;
+  text-transform:uppercase;margin-left:5px;}
+.source-badge.loi{background:#FDECEA;color:var(--red)}
+.source-badge.note{background:#E8F0FB;color:var(--sky)}
+.source-badge.code{background:#E8F5E9;color:var(--green)}
+.source-badge.convention{background:#EDE7F6;color:var(--purple)}
+
+/* Example questions */
+.example-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px}
+.example-q{
+  padding:8px 10px;background:var(--off);border:1px solid var(--border);
+  border-radius:var(--radius);font-size:11px;color:var(--text);cursor:pointer;
+  transition:.12s;text-align:left;font-weight:500;line-height:1.35;
+}
+.example-q:hover{background:#EEF2FF;border-color:var(--sky);color:var(--navy)}
+
+/* Chat method badge */
+.method-badge{
+  display:inline-flex;align-items:center;gap:4px;
+  font-size:10px;padding:2px 8px;border-radius:10px;font-weight:600;
+  background:#E8F5E9;color:var(--green);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   LOADING / EMPTY STATES
+═══════════════════════════════════════════════════════════════════ */
+.empty-state{text-align:center;padding:60px 20px;color:var(--muted)}
+.empty-icon{font-size:48px;margin-bottom:14px}
+.empty-title{font-family:'Playfair Display',serif;font-size:20px;color:var(--navy);margin-bottom:8px}
+.empty-sub{font-size:13px;line-height:1.6}
+
+.spinner{
+  display:inline-block;width:16px;height:16px;border-radius:50%;
+  border:2px solid rgba(255,255,255,.3);border-top-color:#fff;
+  animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.skeleton{background:linear-gradient(90deg,#f0f0f0 25%,#e0e0e0 50%,#f0f0f0 75%);
+  background-size:200% 100%;animation:shimmer 1.4s infinite;border-radius:4px}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* ═══════════════════════════════════════════════════════════════════
+   TYPING INDICATOR
+═══════════════════════════════════════════════════════════════════ */
+.typing-dots{display:flex;gap:4px;padding:4px 2px}
+.typing-dots span{
+  width:7px;height:7px;border-radius:50%;background:var(--muted);
+  animation:bounce 1.2s infinite;
+}
+.typing-dots span:nth-child(2){animation-delay:.2s}
+.typing-dots span:nth-child(3){animation-delay:.4s}
+@keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-5px)}}
+
+/* ═══════════════════════════════════════════════════════════════════
+   TOASTS
+═══════════════════════════════════════════════════════════════════ */
+.toast-container{position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px}
+.toast{
+  padding:10px 16px;border-radius:6px;font-size:13px;font-weight:500;
+  background:var(--navy);color:#fff;box-shadow:0 4px 16px rgba(0,0,0,.2);
+  animation:slideIn .25s ease;max-width:320px;
+}
+.toast.error{background:var(--red)}
+.toast.success{background:#2E7D32}
+@keyframes slideIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:none}}
+
+/* ═══════════════════════════════════════════════════════════════════
+   SOURCE MODAL
+═══════════════════════════════════════════════════════════════════ */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(11,31,75,.5);z-index:2000;
+  display:flex;align-items:center;justify-content:center;padding:20px;
+  animation:fadeIn .2s ease;
+}
+@@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal{
+  background:#fff;border-radius:10px;max-width:640px;width:100%;
+  max-height:80vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3);
+}
+.modal-header{
+  position:sticky;top:0;background:linear-gradient(135deg,var(--navy),var(--blue));
+  color:#fff;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;
+}
+.modal-title{font-family:'Playfair Display',serif;font-size:14px;font-weight:700}
+.modal-close{background:rgba(255,255,255,.2);color:#fff;border-radius:50%;
+  width:28px;height:28px;font-size:16px;display:flex;align-items:center;justify-content:center}
+.modal-close:hover{background:rgba(255,255,255,.35)}
+.modal-body{padding:20px;font-size:13px;line-height:1.7;color:var(--text);white-space:pre-wrap}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FOOTER
+═══════════════════════════════════════════════════════════════════ */
+.footer{
+  text-align:center;color:var(--muted);font-size:11px;padding:20px;
+  border-top:1px solid var(--border);margin-top:40px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════════════════════════════════════ */
+@@media(max-width:900px){
+  .sidebar{display:none}
+  .main-content{margin-left:0}
+  .chat-layout{grid-template-columns:1fr}
+  .sources-panel{display:none}
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════════ NAVBAR ══════════════ -->
+<nav class="navbar">
+  <div class="nav-brand">Fiscal<span>PRO</span></div>
+  <div class="nav-links">
+    <a class="nav-link active" href="#" onclick="showTab('search');return false">Dashboard</a>
+    <a class="nav-link" href="#" onclick="showTab('search');return false">Documentation</a>
+    <a class="nav-link" href="#" onclick="showTab('chat');return false">Assistant IA</a>
+    <a class="nav-link" href="#">Mes Dossiers</a>
+    <a class="nav-link" href="#">Historique</a>
+    <a class="nav-link" href="#">Statistiques</a>
+  </div>
+  <div class="nav-right">
+    <span class="status-dot" id="esStatusDot" title="Elasticsearch"></span>
+    <span class="status-dot" id="neo4jStatusDot" title="Neo4j"></span>
+    <span class="nav-badge">🇹🇳 DGELFA</span>
+  </div>
+</nav>
+
+<!-- ══════════════ LAYOUT ══════════════ -->
+<div class="shell">
+
+  <!-- ── SIDEBAR ── -->
+  <aside class="sidebar">
+
+    <!-- Stats -->
+    <div class="sb-section">
+      <div class="sb-title">Base de Connaissances</div>
+      <div class="stat-card">
+        <div class="stat-card-label">Chunks indexés (ES)</div>
+        <div class="stat-card-val" id="sbEsCount">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-label">Chunks graphe (Neo4j)</div>
+        <div class="stat-card-val" id="sbNeoCount">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-label">Entités / Relations</div>
+        <div class="stat-card-val" id="sbEntRel">—</div>
+      </div>
+    </div>
+
+    <!-- Doc type breakdown -->
+    <div class="sb-section">
+      <div class="sb-title">Par Type de Document</div>
+      <div class="doc-type-bar"><span class="doc-type-icon">📋</span><span class="doc-type-label">Loi de Finances</span><span class="doc-type-count" id="sbLoi">—</span></div>
+      <div class="doc-type-bar"><span class="doc-type-icon">📝</span><span class="doc-type-label">Notes Communes</span><span class="doc-type-count" id="sbNote">—</span></div>
+      <div class="doc-type-bar"><span class="doc-type-icon">📖</span><span class="doc-type-label">Code Local</span><span class="doc-type-count" id="sbCode">—</span></div>
+      <div class="doc-type-bar"><span class="doc-type-icon">🤝</span><span class="doc-type-label">Conventions</span><span class="doc-type-count" id="sbConv">—</span></div>
+      <div class="doc-type-bar"><span class="doc-type-icon">🧠</span><span class="doc-type-label">GNN Actif</span><span class="doc-type-count" id="sbGnn">—</span></div>
+    </div>
+
+    <!-- Filters for search -->
+    <div class="sb-section" id="searchFilters">
+      <div class="sb-title">Filtres de Recherche</div>
+      <label class="sb-filter-label">Type de document</label>
+      <select class="sb-select" id="filterDocType">
+        <option value="all">Tous</option>
+        <option value="loi">Loi</option>
+        <option value="note_commune">Note Commune</option>
+      </select>
+      <label class="sb-filter-label">Type de chunk</label>
+      <select class="sb-select" id="filterChunkType">
+        <option value="all">Tous</option>
+        <option value="article">Article</option>
+        <option value="article_part">Article (extrait)</option>
+        <option value="preamble">Préambule</option>
+        <option value="section">Section</option>
+        <option value="subsection">Sous-section</option>
+        <option value="resume">Résumé</option>
+        <option value="text_table">Tableau (texte)</option>
+        <option value="image_table">Tableau (image)</option>
+        <option value="full_document">Document complet</option>
+      </select>
+    </div>
+
+    <!-- Quick searches -->
+    <div class="sb-section">
+      <div class="sb-title">Recherches Rapides</div>
+      <div class="sb-chip-list">
+        <span class="sb-chip" onclick="quickSearch('TVA')">TVA</span>
+        <span class="sb-chip" onclick="quickSearch('retenue source')">Retenue source</span>
+        <span class="sb-chip" onclick="quickSearch('penalite fiscal')">Pénalité</span>
+        <span class="sb-chip" onclick="quickSearch('article 74')">Article 74</span>
+        <span class="sb-chip" onclick="quickSearch('impot societes')">Impôt sociétés</span>
+        <span class="sb-chip" onclick="quickSearch('amende administrative')">Amende</span>
+        <span class="sb-chip" onclick="quickSearch('declaration impot')">Déclaration</span>
+        <span class="sb-chip" onclick="quickSearch('TVA tunisie 2024')">TVA 2024</span>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- ── MAIN ── -->
+  <main class="main-content">
+
+    <!-- Tab bar -->
+    <div class="tab-bar">
+      <button class="tab-btn active" id="tabSearch" onclick="showTab('search')">
+        🔍 Recherche Documentaire
+      </button>
+      <button class="tab-btn" id="tabChat" onclick="showTab('chat')">
+        🤖 Assistant GraphRAG
+      </button>
+    </div>
+
+    <!-- ════════════ SEARCH PANEL ════════════ -->
+    <div id="panelSearch">
+
+      <div class="search-box">
+        <div class="search-row">
+          <input type="text" class="search-input" id="searchInput"
+                 placeholder="Ex : TVA  |  retenue à la source  |  pénalité fiscale  |  article 74"
+                 onkeydown="if(event.key==='Enter') doSearch()"/>
+          <button class="btn-primary" onclick="doSearch()" id="searchBtn">🔍 Rechercher</button>
+        </div>
+        <div class="year-row">
+          <span class="year-label">Année :</span>
+          <input type="number" class="year-input" id="yearMin" value="2000" min="1990" max="2030"/>
+          <span class="year-label">–</span>
+          <input type="number" class="year-input" id="yearMax" value="2030" min="1990" max="2030"/>
+        </div>
+        <div class="search-hint">
+          Recherche floue activée — fautes de frappe et accents manquants tolérés · BM25 + Elasticsearch
+        </div>
+      </div>
+
+      <div id="searchResults"></div>
+
+    </div>
+
+    <!-- ════════════ CHAT PANEL ════════════ -->
+    <div id="panelChat" style="display:none">
+
+      <div class="chat-layout">
+
+        <!-- Left: chat UI -->
+        <div class="chat-main">
+          <div class="chat-header">
+            <span class="chat-header-icon">🧠</span>
+            <div>
+              <div class="chat-header-title">Assistant Fiscal GraphRAG</div>
+              <div class="chat-header-sub">Vector Search + GNN + Graph Expansion · Neo4j</div>
+            </div>
+          </div>
+
+          <div class="chat-messages" id="chatMessages">
+            <!-- Welcome -->
+            <div class="msg bot">
+              <div class="msg-avatar">F</div>
+              <div>
+                <div class="msg-bubble">
+                  👋 Bonjour ! Je suis votre assistant en <strong>fiscalité tunisienne</strong>.<br/><br/>
+                  Je puise mes réponses dans un graphe de connaissances construit à partir des 
+                  lois de finances, notes communes, code local et conventions fiscales.<br/><br/>
+                  <strong>Posez votre question ↓</strong>
+                </div>
+                <div class="msg-meta">FiscalPRO · GraphRAG</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="chat-input-area">
+            <div class="chat-input-row">
+              <textarea class="chat-input" id="chatInput" rows="2"
+                placeholder="Ex: Quels sont les taux de TVA applicables en 2024?"
+                onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat()}"></textarea>
+              <button class="chat-send-btn" id="chatSendBtn" onclick="sendChat()">Envoyer ▶</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: sources panel -->
+        <div class="sources-panel">
+          <div class="sources-header">📚 Sources (dernière réponse)</div>
+          <div class="sources-body" id="sourcesList">
+            <div style="color:var(--muted);font-size:12px;text-align:center;padding:20px">
+              Les sources apparaîtront ici après votre première question.
+            </div>
+          </div>
+          <div class="sb-section" style="border-top:1px solid var(--border)">
+            <div class="sb-title">Questions d'exemple</div>
+            <div class="example-grid">
+              <button class="example-q" onclick="exampleQ('Quels sont les taux de TVA applicables en Tunisie en 2024?')">📋 Taux de TVA 2024</button>
+              <button class="example-q" onclick="exampleQ('Quel est le taux d\'impôt sur les sociétés en Tunisie?')">💰 Impôt Sociétés</button>
+              <button class="example-q" onclick="exampleQ('Que dit le code de la fiscalité locale sur les immeubles?')">🏠 Code Local</button>
+              <button class="example-q" onclick="exampleQ('Comment fonctionne la retenue à la source en Tunisie?')">📑 Retenue Source</button>
+              <button class="example-q" onclick="exampleQ('Que dit la convention de double imposition avec le Cameroun?')">🤝 Convention Cameroun</button>
+              <button class="example-q" onclick="exampleQ('Quelles sont les pénalités en cas de retard de déclaration fiscale?')">⚠️ Pénalités</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ══════════ SOURCE MODAL ══════════ -->
+<div class="modal-overlay" id="sourceModal" style="display:none" onclick="closeModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <span class="modal-title" id="modalTitle">Source</span>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<!-- ══════════ TOASTS ══════════ -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- ══════════ FOOTER ══════════ -->
+<div class="footer">
+  ⚖️ FiscalPRO — Plateforme Juridique &amp; Fiscale Tunisienne &nbsp;·&nbsp;
+  Elasticsearch BM25 + GraphRAG Neo4j &nbsp;·&nbsp;
+  <span id="footerGnn"></span>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     JAVASCRIPT
+══════════════════════════════════════════════════════════════════ -->
+<script>
+// ── State ────────────────────────────────────────────────────────
+let chatHistory = [];
+let lastSources  = [];
+let searchResultsData = null;
+let showingAll = false;
+
+// ── Tag metadata ─────────────────────────────────────────────────
+const TAG_CSS = {
+  loi:'tag-loi', note_commune:'tag-note', article:'tag-article',
+  article_part:'tag-article', section:'tag-section', subsection:'tag-section',
+  resume:'tag-other', text_table:'tag-table', image_table:'tag-table',
+  preamble:'tag-other', full_document:'tag-other'
+};
+const TAG_LABELS = {
+  loi:'Loi', note_commune:'Note Commune', article:'Article',
+  article_part:'Article ↩', section:'Section', subsection:'Sous-section',
+  resume:'Résumé', text_table:'Tableau', image_table:'Tableau IMG',
+  preamble:'Préambule', full_document:'Document', text:'Texte', table:'Tableau'
+};
+const CAT_LABELS = { loi:'Loi', note:'Note', code:'Code', convention:'Convention' };
+
+// ── Tab switching ─────────────────────────────────────────────────
+function showTab(tab) {
+  document.getElementById('panelSearch').style.display = tab === 'search' ? '' : 'none';
+  document.getElementById('panelChat').style.display   = tab === 'chat'   ? '' : 'none';
+  document.getElementById('tabSearch').classList.toggle('active', tab === 'search');
+  document.getElementById('tabChat').classList.toggle('active', tab === 'chat');
+  document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+  if (tab === 'search') document.querySelectorAll('.nav-link')[0].classList.add('active');
+  if (tab === 'chat')   document.querySelectorAll('.nav-link')[2].classList.add('active');
+}
+
+// ── Sidebar stats on load ────────────────────────────────────────
+async function loadStats() {
+  try {
+    const [esH, neo4jH, statsR] = await Promise.allSettled([
+      fetch('/api/search/health').then(r => r.json()),
+      fetch('/api/chat/health').then(r => r.json()),
+      fetch('/api/stats').then(r => r.json())
+    ]);
+
+    // Status dots
+    const esOk    = esH.status === 'fulfilled' && esH.value.alive;
+    const neo4jOk = neo4jH.status === 'fulfilled' && neo4jH.value.alive;
+    document.getElementById('esStatusDot').className   = 'status-dot' + (esOk ? '' : ' red');
+    document.getElementById('neo4jStatusDot').className= 'status-dot' + (neo4jOk ? '' : ' red');
+
+    if (esH.status === 'fulfilled')
+      document.getElementById('sbEsCount').textContent = (esH.value.count || 0).toLocaleString('fr');
+
+    if (statsR.status === 'fulfilled') {
+      const s = statsR.value;
+      document.getElementById('sbNeoCount').textContent = (s.totalChunks || 0).toLocaleString('fr');
+      document.getElementById('sbEntRel').textContent   = `${(s.totalEntities||0).toLocaleString('fr')} / ${(s.totalRelations||0).toLocaleString('fr')}`;
+      document.getElementById('sbLoi').textContent      = (s.loisCount||0).toLocaleString('fr');
+      document.getElementById('sbNote').textContent     = (s.notesCount||0).toLocaleString('fr');
+      document.getElementById('sbCode').textContent     = (s.codesCount||0).toLocaleString('fr');
+      document.getElementById('sbConv').textContent     = (s.conventionsCount||0).toLocaleString('fr');
+      document.getElementById('sbGnn').textContent      = s.gnnActive ? '✅ Oui' : '❌ Non';
+      document.getElementById('footerGnn').textContent  = `GNN: ${s.gnnActive ? 'Actif' : 'Inactif'}`;
+    }
+  } catch(e) { console.warn('Stats load failed', e); }
+}
+
+// ── Quick search ────────────────────────────────────────────────
+function quickSearch(q) {
+  showTab('search');
+  document.getElementById('searchInput').value = q;
+  doSearch();
+}
+
+// ── SEARCH ──────────────────────────────────────────────────────
+async function doSearch() {
+  const query = document.getElementById('searchInput').value.trim();
+  if (!query) return;
+
+  const btn = document.getElementById('searchBtn');
+  btn.innerHTML = '<span class="spinner"></span>Recherche…';
+  btn.disabled = true;
+
+  const container = document.getElementById('searchResults');
+  container.innerHTML = renderSkeletons();
+  showingAll = false;
+
+  try {
+    const payload = {
+      query,
+      docType:   document.getElementById('filterDocType').value,
+      chunkType: document.getElementById('filterChunkType').value,
+      yearMin:   parseInt(document.getElementById('yearMin').value) || 2000,
+      yearMax:   parseInt(document.getElementById('yearMax').value) || 2030,
+      size: 50
+    };
+    const resp = await fetch('/api/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data = await resp.json();
+    searchResultsData = data;
+    renderSearchResults(data, query);
+  } catch(e) {
+    container.innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div>
+      <div class="empty-title">Erreur de connexion</div>
+      <div class="empty-sub">Elasticsearch inaccessible.<br/><small>${e.message}</small></div></div>`;
+    toast(e.message, 'error');
+  } finally {
+    btn.innerHTML = '🔍 Rechercher';
+    btn.disabled = false;
+  }
+}
+
+function renderSkeletons() {
+  return Array(3).fill(0).map(() =>
+    `<div class="result-card top">
+      <div class="skeleton" style="height:14px;width:60%;margin-bottom:8px"></div>
+      <div class="skeleton" style="height:11px;width:40%;margin-bottom:10px"></div>
+      <div class="skeleton" style="height:40px;width:100%"></div>
+    </div>`
+  ).join('');
+}
+
+function renderSearchResults(data, query) {
+  const container = document.getElementById('searchResults');
+  if (!data.hits || data.hits.length === 0) {
+    container.innerHTML = `<div class="empty-state">
+      <div class="empty-icon">🔎</div>
+      <div class="empty-title">Aucun résultat</div>
+      <div class="empty-sub">Essayez d'autres mots-clés ou désactivez les filtres.</div>
+    </div>`;
+    return;
+  }
+
+  const { hits, total, elapsedMs, maxScore, docTypeBuckets, chunkTypeBuckets } = data;
+
+  // Metrics row
+  let html = `<div class="metrics-row">
+    <div class="metric-pill">Résultats : <b>${total.toLocaleString('fr')}</b></div>
+    <div class="metric-pill">Temps : <b>${Math.round(elapsedMs)} ms</b></div>
+    <div class="metric-pill">Meilleur score : <b>${(maxScore||0).toFixed(2)}</b></div>
+    <div class="metric-pill">Affichés : <b>${Math.min(hits.length, 5)} / ${hits.length}</b></div>
+  </div>`;
+
+  // Aggregation tags
+  const allBuckets = [...(docTypeBuckets||[]), ...(chunkTypeBuckets||[])];
+  if (allBuckets.length) {
+    html += '<div class="tags-row" style="margin-bottom:14px">';
+    allBuckets.forEach(b => {
+      const css = TAG_CSS[b.key] || 'tag-other';
+      const lbl = TAG_LABELS[b.key] || b.key;
+      html += `<span class="tag ${css}">${lbl}: ${b.count}</span>`;
+    });
+    html += '</div>';
+  }
+
+  // Top 5
+  html += `<h3 style="font-family:'Playfair Display',serif;font-size:16px;color:var(--navy);margin-bottom:12px">
+    🏆 Top 5 résultats
+    <span style="font-size:12px;color:var(--muted);font-weight:400;font-family:'DM Sans',sans-serif"> — classés par pertinence BM25</span>
+  </h3>`;
+  hits.slice(0, 5).forEach((h, i) => { html += renderCard(h, i+1, maxScore, true); });
+
+  // Rest (hidden initially)
+  if (hits.length > 5) {
+    html += `<div class="section-divider">↓ ${hits.length - 5} résultats supplémentaires ↓</div>`;
+    html += `<button class="show-more-btn" id="showMoreBtn" onclick="toggleMore()">
+      Afficher les ${hits.length-5} résultats suivants ▼
+    </button>`;
+    html += '<div id="moreResults" style="display:none">';
+    hits.slice(5).forEach((h, i) => { html += renderCard(h, i+6, maxScore, false); });
+    html += '</div>';
+  }
+
+  container.innerHTML = html;
+}
+
+function toggleMore() {
+  showingAll = !showingAll;
+  document.getElementById('moreResults').style.display = showingAll ? '' : 'none';
+  document.getElementById('showMoreBtn').textContent = showingAll
+    ? 'Masquer ▲' : `Afficher les résultats suivants ▼`;
+}
+
+function renderCard(hit, rank, maxScore, isTop) {
+  const pct = Math.max(2, Math.min(100, Math.round((hit.score / Math.max(maxScore, 0.01)) * 100)));
+  const css  = TAG_CSS[hit.chunkType] || 'tag-other';
+  const lbl  = TAG_LABELS[hit.chunkType] || hit.chunkType;
+  const docLbl = TAG_LABELS[hit.documentType] || hit.documentType;
+  const docCss = TAG_CSS[hit.documentType] || 'tag-other';
+
+  const title = [
+    hit.filename,
+    hit.articleNumber ? `Art. ${hit.articleNumber}` : '',
+    hit.sectionTitle
+  ].filter(Boolean).join(' — ') || 'Sans titre';
+
+  const page = hit.pageNumber ? ` · p.${hit.pageNumber}` : '';
+
+  return `
+  <div class="result-card ${isTop ? 'top' : 'rest'}">
+    <div class="card-row">
+      <span class="card-rank">#${rank}</span>
+      <span class="card-title">${escHtml(title)}</span>
+      <span class="card-score-badge">${hit.score.toFixed(2)}</span>
+    </div>
+    <div class="tags-row">
+      ${docLbl ? `<span class="tag ${docCss}">${escHtml(docLbl)}</span>` : ''}
+      <span class="tag ${css}">${escHtml(lbl)}</span>
+    </div>
+    <div class="snippet">${hit.highlight || escHtml((hit.content||'').slice(0,300)+'…')}</div>
+    <div class="score-track"><div class="score-fill" style="width:${pct}%"></div></div>
+    <div class="card-meta">${escHtml(hit.filename)}${page}</div>
+  </div>`;
+}
+
+// ── CHAT ────────────────────────────────────────────────────────
+async function sendChat() {
+  const input = document.getElementById('chatInput');
+  const question = input.value.trim();
+  if (!question) return;
+
+  const btn = document.getElementById('chatSendBtn');
+  btn.disabled = true;
+  input.value = '';
+
+  appendMsg('user', question);
+  const typingId = appendTyping();
+
+  try {
+    const payload = {
+      question,
+      history: chatHistory.slice(-6)
+    };
+    const resp = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data = await resp.json();
+
+    removeTyping(typingId);
+
+    const meta = `<span class="method-badge">⚡ ${data.method || 'vector'}</span>  
+      ${data.chunksRetrieved} sources · ${Math.round(data.elapsedMs/100)/10}s`;
+    appendMsg('bot', data.answer, meta);
+
+    chatHistory.push({ role: 'user', content: question });
+    chatHistory.push({ role: 'assistant', content: data.answer });
+
+    // Update sources panel
+    lastSources = data.sources || [];
+    renderSources(lastSources);
+
+  } catch(e) {
+    removeTyping(typingId);
+    appendMsg('bot', '⚠️ Erreur : ' + e.message);
+    toast(e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    input.focus();
+  }
+}
+
+function appendMsg(role, content, meta) {
+  const messages = document.getElementById('chatMessages');
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+
+  const avatar = role === 'user' ? 'U' : 'F';
+  const mdContent = simpleMarkdown(content);
+
+  div.innerHTML = `
+    <div class="msg-avatar">${avatar}</div>
+    <div>
+      <div class="msg-bubble">${mdContent}</div>
+      ${meta ? `<div class="msg-meta">${meta}</div>` : ''}
+    </div>`;
+  messages.appendChild(div);
+  messages.scrollTop = messages.scrollHeight;
+  return div;
+}
+
+function appendTyping() {
+  const id = 'typing-' + Date.now();
+  const messages = document.getElementById('chatMessages');
+  const div = document.createElement('div');
+  div.className = 'msg bot';
+  div.id = id;
+  div.innerHTML = `
+    <div class="msg-avatar">F</div>
+    <div><div class="msg-bubble">
+      <div class="typing-dots"><span></span><span></span><span></span></div>
+    </div></div>`;
+  messages.appendChild(div);
+  messages.scrollTop = messages.scrollHeight;
+  return id;
+}
+
+function removeTyping(id) {
+  const el = document.getElementById(id);
+  if (el) el.remove();
+}
+
+function exampleQ(q) {
+  document.getElementById('chatInput').value = q;
+  sendChat();
+}
+
+// ── Sources panel ────────────────────────────────────────────────
+function renderSources(sources) {
+  const panel = document.getElementById('sourcesList');
+  if (!sources.length) {
+    panel.innerHTML = '<div style="color:var(--muted);font-size:12px;text-align:center;padding:20px">Aucune source disponible.</div>';
+    return;
+  }
+  panel.innerHTML = sources.map((s, i) => {
+    const cat = s.category || 'loi';
+    const catLabel = CAT_LABELS[cat] || cat;
+    const ref = s.articleRef ? ` · ${s.articleRef}` : '';
+    const preview = (s.text || '').slice(0, 80).replace(/\s+/g, ' ');
+    return `
+    <div class="source-item ${cat}" onclick="openSourceModal(${i})" title="Cliquez pour voir le texte complet">
+      <div class="source-doc">
+        ${escHtml(s.docName)}, p.${s.pageNum}${escHtml(ref)}
+        <span class="source-badge ${cat}">${catLabel}</span>
+      </div>
+      <div class="source-preview">${escHtml(preview)}…</div>
+    </div>`;
+  }).join('');
+}
+
+function openSourceModal(idx) {
+  const s = lastSources[idx];
+  if (!s) return;
+  const ref = s.articleRef ? ` [${s.articleRef}]` : '';
+  document.getElementById('modalTitle').textContent = `${s.docName}, p.${s.pageNum}${ref}`;
+  document.getElementById('modalBody').textContent  = s.text || '(Texte non disponible)';
+  document.getElementById('sourceModal').style.display = 'flex';
+}
+
+function closeModal(e) {
+  if (!e || e.target === document.getElementById('sourceModal'))
+    document.getElementById('sourceModal').style.display = 'none';
+}
+
+// ── Simple markdown renderer ─────────────────────────────────────
+function simpleMarkdown(text) {
+  return escHtml(text)
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/`(.+?)`/g, '<code style="background:#f0f0f0;padding:1px 4px;border-radius:3px;font-size:.9em">$1</code>')
+    .replace(/\n/g, '<br/>');
+}
+
+// ── Toast ─────────────────────────────────────────────────────────
+function toast(msg, type) {
+  const container = document.getElementById('toastContainer');
+  const t = document.createElement('div');
+  t.className = `toast ${type||''}`;
+  t.textContent = msg;
+  container.appendChild(t);
+  setTimeout(() => t.remove(), 4000);
+}
+
+// ── Utility ──────────────────────────────────────────────────────
+function escHtml(s) {
+  if (!s) return '';
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Init ─────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  loadStats();
+  document.getElementById('searchInput').focus();
+});
+</script>
+</body>
+</html>

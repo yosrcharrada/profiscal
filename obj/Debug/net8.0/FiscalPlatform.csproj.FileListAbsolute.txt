@@ -1,0 +1,8 @@
+C:\Users\yosrc\Downloads\FiscalPlatform\FiscalPlatform\obj\Debug\net8.0\FiscalPlatform.csproj.AssemblyReference.cache
+C:\Users\yosrc\Downloads\FiscalPlatform\FiscalPlatform\obj\Debug\net8.0\FiscalPlatform.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\yosrc\Downloads\FiscalPlatform\FiscalPlatform\obj\Debug\net8.0\FiscalPlatform.AssemblyInfoInputs.cache
+C:\Users\yosrc\Downloads\FiscalPlatform\FiscalPlatform\obj\Debug\net8.0\FiscalPlatform.AssemblyInfo.cs
+C:\Users\yosrc\Downloads\FiscalPlatform\FiscalPlatform\obj\Debug\net8.0\FiscalPlatform.csproj.CoreCompileInputs.cache
+C:\Users\yosrc\Downloads\FiscalPlatform\FiscalPlatform\obj\Debug\net8.0\FiscalPlatform.MvcApplicationPartsAssemblyInfo.cache
+C:\Users\yosrc\Downloads\FiscalPlatform\FiscalPlatform\obj\Debug\net8.0\FiscalPlatform.RazorAssemblyInfo.cache
+C:\Users\yosrc\Downloads\FiscalPlatform\FiscalPlatform\obj\Debug\net8.0\FiscalPlatform.RazorAssemblyInfo.cs
