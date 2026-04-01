@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("FiscalPlatform")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c233b9914ac54cc4688c7b4614b309230c48dbbc")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+ed0ba9ec6d58691c3b34d8e54dbe2a7ccf2a1c82")]
 [assembly: System.Reflection.AssemblyProductAttribute("FiscalPlatform")]
 [assembly: System.Reflection.AssemblyTitleAttribute("FiscalPlatform")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

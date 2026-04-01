@@ -28,6 +28,7 @@ public class GraphRagService
     {
         _neo4j       = neo4j;
         _http        = factory.CreateClient();
+        _http.Timeout = TimeSpan.FromMinutes(5); // added this line
         _config      = config;
         _logger      = logger;
         _llmProvider = config["Llm:Provider"] ?? "ollama";
@@ -193,7 +194,7 @@ Réponds de manière précise en te basant sur ces sources.";
             model    = _llmModel,
             messages,
             stream   = false,
-            options  = new { temperature = 0.1, num_predict = 1024 }
+            options  = new { temperature = 0.1, num_predict = 256 }
         });
 
         try
