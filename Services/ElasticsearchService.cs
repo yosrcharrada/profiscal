@@ -128,7 +128,7 @@ public class ElasticsearchService
                     fields   = new[] { "content^3", "article_number^2", "section_title^1.5", "filename" },
                     type     = "best_fields",
                     fuzziness = "AUTO",
-                    operator  = "or"
+                    @operator  = "or"
                 }
             }
         };
