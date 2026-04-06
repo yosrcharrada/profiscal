@@ -1,6 +1,10 @@
 using FiscalPlatform.Services;
+using DotNetEnv;
 
 var builder = WebApplication.CreateBuilder(args);
+Env.Load();
+
+builder.WebHost.UseUrls("http://localhost:8080");
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddHttpClient();
