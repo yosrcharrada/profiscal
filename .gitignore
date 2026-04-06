@@ -1,0 +1,47 @@
+﻿# Environment & Secrets
+.env
+.env.local
+.env.*.local
+appsettings.Development.json
+appsettings.Production.json
+
+# Build output
+bin/
+obj/
+publish/
+*.dll
+*.exe
+*.pdb
+
+# IDE
+.vs/
+.vscode/
+*.swp
+*.swo
+*.user
+*.userprefs
+*.sln.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# NuGet
+packages/
+.nuget/
+
+# Logs
+logs/
+*.log
+
+# Database dumps (backups, exports)
+*.dump
+*.sql
+*.bak
+
+# Rider
+.idea/
+
+# VS Code
+launch.json
+tasks.json
