@@ -9,14 +9,11 @@ et votre chatbot GraphRAG Neo4j en une interface professionnelle inspirée de DB
 
 ```
 FiscalPlatform/
-├── Controllers/
-│   └── Controllers.cs          # HomeController, SearchController, ChatController, StatsController
-├── Models/
-│   └── Models.cs               # SearchRequest/Response, ChatRequest/Response, KnowledgeBaseStats
-├── Services/
-│   ├── ElasticsearchService.cs # BM25 + fuzzy search, highlight, aggregations
-│   ├── Neo4jService.cs         # Stats, vector search (GNN), graph expansion, keyword fallback
-│   └── GraphRagService.cs      # Orchestration: embed → retrieve → rank → LLM
+├── Controllers/                # Lean HTTP controllers
+├── Application/                # CQRS queries/handlers + DTOs/mappers
+├── Domain/                     # Entities, value objects, repository contracts
+├── Infrastructure/             # Elasticsearch/Neo4j/LLM implementations
+├── Models/                     # HTTP request models
 ├── Views/
 │   └── Home/
 │       └── Index.cshtml        # Full SPA — search engine + chatbot
