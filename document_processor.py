@@ -33,7 +33,9 @@ from pathlib import Path
 from typing import List, Optional
 from dataclasses import dataclass, asdict
 
+
 import pymupdf as fitz
+
 import pytesseract
 from pdf2image import convert_from_path
 from dotenv import load_dotenv
@@ -321,6 +323,7 @@ class TableExtractor:
                                 document_id=doc_id, filename=filename,
                                 document_type=doc_type, chunk_type='text_table',
                                 content=tbl, page_number=page_num+1))
+<<<<<<< HEAD
         # SKIP IMAGE TABLE OCR — it's causing hangs
         #if page.get_images(full=True):
             #for c in self._image_tables(pdf_path, page_num, doc_id, filename, doc_type):
@@ -330,6 +333,15 @@ class TableExtractor:
     def _text_tables(self, text):
         if not text:  # Handle None or empty text
             return []
+=======
+
+        if page.get_images(full=True):
+            for c in self._image_tables(pdf_path, page_num, doc_id, filename, doc_type):
+                chunks.append(c)
+        return chunks
+
+    def _text_tables(self, text):
+>>>>>>> 9b23e8fa926e8ec82f72f25f9402af3169405eff
         lines, tables, buf = text.split('\n'), [], []
         for line in lines:
             n = line.count('|') + line.count('\t') + len(re.findall(r' {3,}', line))
