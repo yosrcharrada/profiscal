@@ -29,8 +29,9 @@ public sealed class Neo4jKnowledgeGraphRepository(
                 var result = await session.RunAsync(cypher, new { topK, emb = embList });
                 chunks = await MapChunks(result);
             }
-            catch
+            catch (Exception ex)
             {
+                logger.LogInformation(ex, "Falling back to 'chunk_embeddings' vector index");
                 cypher = @"
                     CALL db.index.vector.queryNodes('chunk_embeddings', $topK, $emb)
                     YIELD node AS c, score
