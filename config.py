@@ -4,7 +4,12 @@ Reads .env once, provides consistent database name and URI parsing.
 """
 
 import os
-from dotenv import load_dotenv
+
+try:
+    from dotenv import load_dotenv
+except ImportError:  # pragma: no cover - optional dependency
+    def load_dotenv() -> None:
+        return None
 
 load_dotenv()
 

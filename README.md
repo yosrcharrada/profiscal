@@ -197,6 +197,24 @@ Question utilisateur
 - Modal pour texte complet des sources
 - Responsive (mobile : sidebar masquée)
 
+### Génération de consultations fiscales (Neo4j-grounded)
+- Script : `create_reports.py`
+- Cas supportés : `non_resident_purchases`, `withholding_tax`, `transfer_pricing`, `corporate_individual_mix`
+- Le script récupère 5-10 extraits juridiques Neo4j par cas (articles, doctrine, jurisprudence), puis génère :
+  - `1.1 Compréhension des faits`
+  - `1.2 Étendue des travaux` (avec références d'articles)
+  - `3. Sommaire exécutif`
+  - `4. Analyses` (tableaux Q/R + matrice de risques)
+  - `5. Documents et références` + abréviations
+
+Exemple :
+```bash
+python create_reports.py --count 10 --template-path template_fr.docx --output-dir generated_consultations
+```
+
+Variables `.env` utilisées :
+`NEO4J_URI`, `NEO4J_DATABASE`, `NEO4J_USERNAME`, `NEO4J_PASSWORD`.
+
 ---
 
 ## Publication (production)
