@@ -199,21 +199,54 @@ Question utilisateur
 
 ### Génération de consultations fiscales (Neo4j-grounded)
 - Script : `create_reports.py`
-- Cas supportés : `non_resident_purchases`, `withholding_tax`, `transfer_pricing`, `corporate_individual_mix`
-- Le script récupère 5-10 extraits juridiques Neo4j par cas (articles, doctrine, jurisprudence), puis génère :
-  - `1.1 Compréhension des faits`
-  - `1.2 Étendue des travaux` (avec références d'articles)
-  - `3. Sommaire exécutif`
-  - `4. Analyses` (tableaux Q/R + matrice de risques)
-  - `5. Documents et références` + abréviations
+- Génère **10 consultations distinctes** (cas réalistes tunisiens) en `.docx`
 
-Exemple :
+**Pipeline par consultation :**
+1. Sélection d'un scénario parmi 10 cas prédéfinis et entièrement différents
+2. Récupération des chunks juridiques Neo4j pertinents (GraphRAG keyword scoring)
+3. Construction d'un contexte légal réel (extraits de lois, articles, codes)
+4. Appel Azure OpenAI avec le contexte Neo4j → génération des sections :
+   - `1.1 Compréhension des faits`
+   - `1.2 Étendue des travaux` (avec références d'articles)
+   - `3. Sommaire exécutif` (conclusions fondées sur les textes + tableau de risques)
+   - `4. Analyses` (tableau Q&A avec articles cités)
+   - `5. Documents et références` + abréviations
+5. Remplacement des tokens dans `template_fr.docx` → `.docx` final
+   (crée un `.docx` structuré de zéro si le template est absent)
+
+**Les 10 scénarios :**
+| # | Cas | Profil |
+|---|-----|--------|
+| 1 | Achats SaaS USA | TechPark Innovations SARL — TVA, retenue IS, CDPF |
+| 2 | Équipements Allemagne | Carthage Industries SA — TVA importation, retenue prestation |
+| 3 | DG français en Tunisie | M. Laurent Dupont — IRPP, convention franco-tunisienne |
+| 4 | Télétravailleur UAE | Mme Sana Mejri — IRPP, change, rapatriement |
+| 5 | Management fees intra-groupe | Med Services SARL — Prix de transfert, déductibilité IS |
+| 6 | Redevances PI (NL) | TunisTech SARL — Redevances, convention, retenue |
+| 7 | Médecin / SARL | Dr. Ben Salah — IRPP libéral vs rémunération gérance |
+| 8 | Consultante RH mix | Mme Chaabane — IRPP BNC + IS, jetons de présence |
+| 9 | Services numériques TVA | StreamTN — TVA services dématérialisés |
+| 10 | Chantier BTP belge | BuildCon Belgium — Établissement stable, IS, retenues |
+
+**Variables d'environnement (`.env`) :**
+```
+# Azure OpenAI (même que GraphRagService.cs)
+OPENAI_API_KEY=...
+OPENAI_ENDPOINT=https://...
+OPENAI_API_VERSION=2024-02-15-preview
+LLM_MODEL=gpt-4o
+
+# Neo4j
+NEO4J_URI=neo4j://127.0.0.1:7687
+NEO4J_DATABASE=fiscal
+NEO4J_USERNAME=neo4j
+NEO4J_PASSWORD=neo4j123
+```
+
+**Utilisation :**
 ```bash
 python create_reports.py --count 10 --template-path template_fr.docx --output-dir generated_consultations
 ```
-
-Variables `.env` utilisées :
-`NEO4J_URI`, `NEO4J_DATABASE`, `NEO4J_USERNAME`, `NEO4J_PASSWORD`.
 
 ---
 
