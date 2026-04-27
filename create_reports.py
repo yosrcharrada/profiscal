@@ -2,25 +2,23 @@
 create_reports.py
 Generate realistic Tunisian tax consultation reports grounded in Neo4j GraphRAG.
 
-Pipeline:
-1. Query Neo4j for relevant legal chunks (with dates/years)
-2. Build GraphRAG context with citations
-3. Call Azure OpenAI LLM with Neo4j context
-4. Parse response into 4 sections
-5. Convert Markdown tables to Word tables
-6. Replace tokens in template_fr.docx
-7. Output .docx files with proper formatting
+Key improvements:
+1. [NOM_CLIENT] and [MM/AA] replaced in textboxes (header/footer)
+2. [ABREVIATIONS] extracted from LLM response
+3. Neo4j chunks used in ANALYSES (where logic/answers go)
+4. Realistic 1.2 Étendue with article citations
+5. 3. Sommaire Exécutif with conclusions
 """
 
 from __future__ import annotations
 
 import argparse
+import datetime as dt
 import hashlib
 import os
 import re
 import unicodedata
 import zipfile
-import io
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Optional, Sequence, Tuple
@@ -39,15 +37,6 @@ except ImportError:
 from config import get_config
 
 try:
-    from docx import Document
-    from docx.oxml.ns import qn
-    from docx.shared import Pt, RGBColor
-    from docx.enum.text import WD_ALIGN_PARAGRAPH
-    from docx.oxml import OxmlElement
-except ImportError:
-    Document = None
-
-try:
     from openai import AzureOpenAI
 except ImportError:
     AzureOpenAI = None
@@ -55,10 +44,10 @@ except ImportError:
 load_dotenv()
 
 # ============================================================================
-# CONFIGURATION CONSTANTS
+# CONFIGURATION
 # ============================================================================
 
-_MAX_CHUNK_TEXT_CHARS = 800
+_MAX_CHUNK_TEXT_CHARS = 600
 _DEDUP_HASH_LENGTH = 16
 _LLM_TIMEOUT_SECONDS = 120.0
 
@@ -69,14 +58,14 @@ _LLM_TIMEOUT_SECONDS = 120.0
 
 @dataclass
 class LegalSource:
-    """Represents one chunk of legal text retrieved from Neo4j."""
+    """Represents one chunk of legal text from Neo4j."""
     doc_name: str
     page_num: int
     article_ref: str
     section_title: str
     text: str
     score: float
-    year: int = 0  # NEW: year/date of document
+    year: int = 0
 
     def short_ref(self) -> str:
         """Return a short reference string (e.g., 'CTVA 2024 — p.42 — Art. 3')."""
@@ -92,7 +81,7 @@ class LegalSource:
 
 @dataclass
 class ConsultationScenario:
-    """All the facts needed to generate one consultation report."""
+    """All facts needed to generate one consultation report."""
     idx: int
     reference: str
     case_label: str
@@ -106,7 +95,7 @@ class ConsultationScenario:
 
 
 # ============================================================================
-# 10 DISTINCT CONSULTATION SCENARIOS
+# 10 DISTINCT SCENARIOS
 # ============================================================================
 
 SCENARIOS: Tuple[ConsultationScenario, ...] = (
@@ -371,11 +360,11 @@ SCENARIOS: Tuple[ConsultationScenario, ...] = (
 
 
 # ============================================================================
-# NEO4J CONTEXT RETRIEVAL SERVICE
+# NEO4J SERVICE
 # ============================================================================
 
 class Neo4jContextService:
-    """Retrieves legal text chunks from Neo4j with year/date metadata."""
+    """Retrieves legal chunks from Neo4j."""
 
     _CHUNK_QUERY = """
     MATCH (c:Chunk)
@@ -400,7 +389,7 @@ class Neo4jContextService:
            coalesce(c.article_ref, '')    AS article_ref,
            coalesce(c.section_title, '')  AS section_title,
            coalesce(c.text, '')           AS text,
-           coalesce(c.year, 0)            AS year,
+           0                              AS year,
            score
     ORDER BY score DESC, c.doc_name ASC, c.page_num ASC
     LIMIT $limit
@@ -464,7 +453,7 @@ class Neo4jContextService:
 
 
 # ============================================================================
-# AZURE OPENAI LLM SERVICE
+# AZURE OPENAI SERVICE
 # ============================================================================
 
 class AzureOpenAIService:
@@ -472,9 +461,10 @@ class AzureOpenAIService:
 
     SYSTEM_PROMPT = (
         "Tu es un expert fiscal tunisien senior dans un grand cabinet de conseil international. "
-        "Tu rédiges des consultations fiscales professionnelles en français. "
-        "Tu cites toujours les articles de loi, codes et conventions. "
-        "Ne fabrique pas de références légales : utilise uniquement ce qui est fourni ou ce que tu connais du droit tunisien."
+        "Tu rédiges des consultations fiscales professionnelles et réalistes en français. "
+        "Tu dois TOUJOURS citer explicitement les articles de loi, codes et conventions utilisés. "
+        "Utilise UNIQUEMENT les extraits légaux fournis ou ce que tu connais du droit tunisien avéré. "
+        "Ne fabrique pas de références légales fictives."
     )
 
     def __init__(self) -> None:
@@ -521,11 +511,11 @@ class AzureOpenAIService:
 
 
 # ============================================================================
-# CONTEXT BUILDER & PROMPT BUILDER
+# CONTEXT & PROMPT BUILDERS
 # ============================================================================
 
 def build_legal_context(sources: Sequence[LegalSource]) -> str:
-    """Format Neo4j chunks with years/dates."""
+    """Format Neo4j chunks with metadata."""
     if not sources:
         return "(Aucun extrait légal disponible.)"
     
@@ -533,10 +523,9 @@ def build_legal_context(sources: Sequence[LegalSource]) -> str:
     for i, s in enumerate(sources, 1):
         ref = s.article_ref.strip() if s.article_ref else "—"
         title = s.section_title.strip() if s.section_title else ""
-        year_str = f" {s.year}" if s.year else ""
         
         lines.append(
-            f"[Extrait {i} | {s.doc_name}{year_str}, p.{s.page_num} | Art. {ref}"
+            f"[Extrait {i} | {s.doc_name}, p.{s.page_num} | Art. {ref}"
             f"{' | ' + title if title else ''}]"
         )
         
@@ -551,8 +540,7 @@ def build_legal_context(sources: Sequence[LegalSource]) -> str:
 
 
 SECTION_PROMPT_TEMPLATE = """\
-=== DOSSIER DE CONSULTATION FISCALE ===
-
+=== CONSULTATION FISCALE ===
 Référence: {reference}
 Client: {client_name} ({client_type})
 
@@ -562,35 +550,47 @@ SITUATION:
 OBJECTIF:
 {objective}
 
-=== EXTRAITS LÉGAUX ===
+=== EXTRAITS LÉGAUX (utilisez ces sources dans l'ANALYSE) ===
 {legal_context}
 
-=== INSTRUCTIONS ===
-Rédige 4 sections distinctes avec ces titres EXACTS:
+=== INSTRUCTIONS POUR LA GÉNÉRATION ===
+
+Rédige 5 sections avec ces TITRES EXACTS:
 
 --- SECTION 1 : COMPRÉHENSION DES FAITS ---
-Rédige le contenu de "1.1 Notre compréhension des faits" (300+ mots).
-Cite les articles de loi explicitement.
+Rédige "1.1 Notre compréhension des faits" (300+ mots).
+Contexte général: qui est le client, quelle est son activité, d'où/comment achète-t-il, montants impliqués.
+Cite les articles de loi applicables (ex. "conformément à l'article 52 du CDPF").
 
 --- SECTION 2 : ÉTENDUE DES TRAVAUX ---
-Rédige le contenu de "1.2 Étendue de nos travaux" (250+ mots).
-Inclus une liste numérotée des points couverts.
+Rédige "1.2 Étendue de nos travaux" (250+ mots).
+Format: "Notre analyse portera sur les aspects suivants :" puis liste numérotée de 8-12 points avec articles.
+Exemple de format:
+1) Régime des rémunérations en matière d'impôt sur les sociétés (articles XXX du CGI)
+2) Traitement TVA applicable (articles YYY du CTVA)
+3) Obligation de retenue à la source (article ZZZ du CIRPPIS)
+[etc.]
 
---- SECTION 3 : ANALYSES DÉTAILLÉES ---
-Rédige le contenu de "3. Analyses détaillées" (600+ mots).
-Format: Crée des questions/analyses en tableau Markdown:
+--- SECTION 3 : SOMMAIRE EXÉCUTIF ---
+Rédige "3. Sommaire Exécutif" (400+ mots).
+3-5 paragraphes synthétisant les enjeux et conclusions principales.
+Cite les articles/textes utilisés. Inclus un tableau de risques:
+| Risque identifié | Probabilité | Impact | Mesure recommandée |
+|---|---|---|---|
+[4-6 lignes]
 
+--- SECTION 4 : ANALYSES DÉTAILLÉES ---
+Rédige "4. Analyses détaillées" (700+ mots).
+Utilise les extraits légaux fournis.
+Format: Crée un tableau Q&A:
 | Question | Règle applicable | Analyse et conclusion |
 |---|---|---|
-| Question 1 ? | Articles XXX | Réponse détaillée... |
-| Question 2 ? | Articles YYY | Réponse détaillée... |
+[6-8 lignes avec citations directes des extraits]
 
---- SECTION 4 : DOCUMENTS ET RÉFÉRENCES ---
-Rédige le contenu de "5. Documents et références" (150+ mots).
-Inclus:
-- Sources légales utilisées (avec années)
-- Abréviations utilisées
-- Documents communiqués
+--- SECTION 5 : DOCUMENTS ET RÉFÉRENCES ---
+Rédige "5. Documents et Références" (150+ mots).
+Liste TOUTES les abréviations utilisées dans le document avec leur développement complet.
+Inclus aussi les documents communiqués et sources légales.
 
 === FIN ===
 """
@@ -608,103 +608,77 @@ def build_prompt(scenario: ConsultationScenario, legal_context: str) -> str:
 
 
 # ============================================================================
-# TABLE CONVERSION (Markdown → Word)
-# ============================================================================
-
-def markdown_table_to_word_table(para, md_table: str) -> None:
-    """
-    Convert Markdown table to Word table and insert after paragraph.
-    
-    Input: 
-    | Col1 | Col2 | Col3 |
-    |---|---|---|
-    | Data1 | Data2 | Data3 |
-    """
-    lines = md_table.strip().split('\n')
-    if len(lines) < 3:
-        return
-    
-    # Parse header
-    header_line = lines[0].strip()
-    if not header_line.startswith('|') or not header_line.endswith('|'):
-        return
-    
-    headers = [h.strip() for h in header_line.split('|')[1:-1]]
-    if not headers:
-        return
-    
-    # Skip separator line (line 1)
-    # Parse data rows (lines 2+)
-    rows = []
-    for line in lines[2:]:
-        if not line.strip():
-            continue
-        cells = [c.strip() for c in line.split('|')[1:-1]]
-        if cells and len(cells) == len(headers):
-            rows.append(cells)
-    
-    if not rows:
-        return
-    
-    # Create Word table
-    doc = para.document
-    table = doc.add_table(rows=len(rows) + 1, cols=len(headers))
-    table.style = 'Light Grid Accent 1'
-    
-    # Set header row
-    header_cells = table.rows[0].cells
-    for i, header in enumerate(headers):
-        header_cells[i].text = header
-        # Bold header
-        for paragraph in header_cells[i].paragraphs:
-            for run in paragraph.runs:
-                run.font.bold = True
-    
-    # Set data rows
-    for row_idx, row_data in enumerate(rows, 1):
-        row_cells = table.rows[row_idx].cells
-        for col_idx, cell_data in enumerate(row_data):
-            row_cells[col_idx].text = cell_data
-
-
-# ============================================================================
 # LLM RESPONSE PARSER
 # ============================================================================
 
-def parse_llm_response(llm_text: str) -> Dict[str, str]:
-    """Parse LLM response with 4 SECTION markers."""
-    sections = {
-        "COMPRÉHENSION_DES_FAITS": "",
-        "ÉTENDUE_DES_TRAVAUX": "",
-        "ANALYSES_DÉTAILLÉES": "",
-        "DOCUMENTS_ET_RÉFÉRENCES": "",
-    }
+def extract_abbreviations(text: str) -> str:
+    """Extract abbreviations section from LLM response."""
+    # Look for section 5 / DOCUMENTS / ABRÉVIATIONS
+    patterns = [
+        r"--- SECTION 5.*?ABRÉVIATIONS.*?:\s*(.*?)(?=---|$)",
+        r"5\.\s*DOCUMENTS.*?ABRÉVIATIONS.*?:\s*(.*?)(?=5\.|$)",
+        r"ABRÉVIATIONS\s*:\s*(.*?)(?=---|Sources|$)",
+    ]
     
-    # Find section markers
-    markers = {
-        "COMPRÉHENSION_DES_FAITS": r"--- SECTION 1.*?COMPRÉHENSION",
-        "ÉTENDUE_DES_TRAVAUX": r"--- SECTION 2.*?ÉTENDUE",
-        "ANALYSES_DÉTAILLÉES": r"--- SECTION 3.*?ANALYSES",
-        "DOCUMENTS_ET_RÉFÉRENCES": r"--- SECTION 4.*?DOCUMENTS",
-    }
-    
-    # Extract content between markers
-    section_positions = []
-    for key, pattern in markers.items():
-        match = re.search(pattern, llm_text, re.IGNORECASE | re.DOTALL)
+    for pattern in patterns:
+        match = re.search(pattern, text, re.IGNORECASE | re.DOTALL)
         if match:
-            section_positions.append((key, match.end()))
+            abbrev_text = match.group(1).strip()
+            if len(abbrev_text) > 100:  # Reasonable length
+                return abbrev_text
     
-    section_positions.sort(key=lambda x: x[1])
+    # Fallback: return empty list marker
+    return ""
+
+
+def parse_llm_response(llm_text: str) -> Dict[str, str]:
+    """Parse LLM response into sections."""
+    sections = {
+        "FAITS": "",
+        "ETENDUE": "",
+        "SOMMAIRE_EXECUTIF": "",
+        "ANALYSES": "",
+        "ABREVIATIONS": "",
+    }
     
-    for i, (key, start_pos) in enumerate(section_positions):
-        if i + 1 < len(section_positions):
-            end_pos = section_positions[i + 1][1] - len(section_positions[i + 1][0]) - 50
-        else:
-            end_pos = len(llm_text)
-        
-        content = llm_text[start_pos:end_pos].strip()
-        sections[key] = content
+    # Extract COMPRÉHENSION DES FAITS (Section 1.1)
+    match = re.search(
+        r"--- SECTION 1.*?COMPRÉHENSION.*?\n(.*?)--- SECTION 2",
+        llm_text,
+        re.IGNORECASE | re.DOTALL
+    )
+    if match:
+        sections["FAITS"] = match.group(1).strip()
+    
+    # Extract ÉTENDUE DES TRAVAUX (Section 1.2)
+    match = re.search(
+        r"--- SECTION 2.*?ÉTENDUE.*?\n(.*?)--- SECTION 3",
+        llm_text,
+        re.IGNORECASE | re.DOTALL
+    )
+    if match:
+        sections["ETENDUE"] = match.group(1).strip()
+    
+    # Extract SOMMAIRE EXÉCUTIF (Section 3)
+    match = re.search(
+        r"--- SECTION 3.*?SOMMAIRE.*?\n(.*?)--- SECTION 4",
+        llm_text,
+        re.IGNORECASE | re.DOTALL
+    )
+    if match:
+        sections["SOMMAIRE_EXECUTIF"] = match.group(1).strip()
+    
+    # Extract ANALYSES (Section 4)
+    match = re.search(
+        r"--- SECTION 4.*?ANALYSES.*?\n(.*?)--- SECTION 5",
+        llm_text,
+        re.IGNORECASE | re.DOTALL
+    )
+    if match:
+        sections["ANALYSES"] = match.group(1).strip()
+    
+    # Extract ABREVIATIONS (Section 5)
+    sections["ABREVIATIONS"] = extract_abbreviations(llm_text)
     
     return sections
 
@@ -734,8 +708,8 @@ def replacement_runs(text: str) -> str:
     return "".join(out)
 
 
-def replace_token_inside_runs(xml: str, token: str, new_text: str) -> str:
-    """Replace token even if split across multiple <w:t>."""
+def replace_token_in_xml(xml: str, token: str, new_text: str) -> str:
+    """Replace token in paragraph runs."""
     p_pat = re.compile(r"(<w:p\b[^>]*>)(.*?)(</w:p>)", re.DOTALL)
     t_pat = re.compile(r"<w:t\b[^>]*>(.*?)</w:t>", re.DOTALL)
 
@@ -744,15 +718,37 @@ def replace_token_inside_runs(xml: str, token: str, new_text: str) -> str:
         flat = "".join(t_pat.findall(inner))
         if token not in flat:
             return m.group(0)
-
         replaced = flat.replace(token, new_text)
         return start + replacement_runs(replaced) + end
 
     return p_pat.sub(repl_p, xml)
 
 
-def modify_docx_template(template_path: Path, output_path: Path, tokens: Dict[str, str]) -> None:
-    """Modify template_fr.docx by replacing tokens in XML."""
+def replace_token_in_textbox(xml: str, token: str, new_text: str) -> str:
+    """Replace token in textbox (header/footer)."""
+    txbx_pat = re.compile(r"(<w:txbxContent\b[^>]*>)(.*?)(</w:txbxContent>)", re.DOTALL)
+    t_pat = re.compile(r"<w:t\b[^>]*>(.*?)</w:t>", re.DOTALL)
+
+    def repl_box(m):
+        start, inner, end = m.group(1), m.group(2), m.group(3)
+        flat = "".join(t_pat.findall(inner))
+        if token not in flat:
+            return m.group(0)
+        flat = flat.replace(token, new_text)
+        new_inner = f"<w:p>{replacement_runs(flat)}</w:p>"
+        return start + new_inner + end
+
+    return txbx_pat.sub(repl_box, xml)
+
+
+def modify_docx_template(
+    template_path: Path,
+    output_path: Path,
+    client_name: str,
+    mm_aa: str,
+    tokens: Dict[str, str]
+) -> None:
+    """Modify template by replacing tokens."""
     if not template_path.exists():
         raise FileNotFoundError(f"Template not found: {template_path}")
     
@@ -767,11 +763,14 @@ def modify_docx_template(template_path: Path, output_path: Path, tokens: Dict[st
                     except UnicodeDecodeError:
                         xml = data.decode("utf-16")
 
-                    # Replace tokens
+                    # Replace textbox tokens (header/footer with yellow background)
+                    xml = replace_token_in_textbox(xml, "[NOM_CLIENT]", client_name)
+                    xml = replace_token_in_textbox(xml, "[MM/AA]", mm_aa)
+
+                    # Replace body tokens
                     for token_key, token_value in tokens.items():
                         token_placeholder = f"[{token_key}]"
-                        if token_placeholder in xml:
-                            xml = replace_token_inside_runs(xml, token_placeholder, token_value)
+                        xml = replace_token_in_xml(xml, token_placeholder, token_value)
 
                     data = xml.encode("utf-8")
 
@@ -791,7 +790,7 @@ def generate_reports(
     output_dir.mkdir(parents=True, exist_ok=True)
 
     if count > len(SCENARIOS):
-        print(f"⚠️  count={count} exceeds {len(SCENARIOS)} scenarios — using {len(SCENARIOS)}")
+        print(f"⚠️  count={count} exceeds {len(SCENARIOS)} scenarios")
         count = len(SCENARIOS)
 
     neo4j = Neo4jContextService()
@@ -804,6 +803,10 @@ def generate_reports(
         for scenario in SCENARIOS[:count]:
             print(f"\n📄 [{scenario.idx}/{count}] {scenario.reference} — {scenario.client_name}")
 
+            # Get today's date for [MM/AA] token
+            today = dt.date.today()
+            mm_aa = today.strftime("%m/%y")
+
             # Retrieve Neo4j chunks
             try:
                 sources = neo4j.get_chunks_for_scenario(scenario)
@@ -812,7 +815,7 @@ def generate_reports(
                 print(f"   ⚠️  Neo4j failed: {exc}")
                 sources = []
 
-            # Build context
+            # Build context from chunks
             legal_context = build_legal_context(sources)
 
             # Call LLM
@@ -829,32 +832,38 @@ def generate_reports(
                 llm_text = ""
 
             if not llm_text:
-                print(f"   ❌ No content generated — skipping")
+                print(f"   ❌ No content generated")
                 continue
 
-            # Parse response
+            # Parse response into sections
             sections = parse_llm_response(llm_text)
 
-            # Create tokens for template replacement
+            # Create tokens for replacement
             tokens = {
-                "FAITS": sections.get("COMPRÉHENSION_DES_FAITS", ""),
-                "ETENDUE": sections.get("ÉTENDUE_DES_TRAVAUX", ""),
-                "ANALYSES": sections.get("ANALYSES_DÉTAILLÉES", ""),
-                "DOCUMENTS": sections.get("DOCUMENTS_ET_RÉFÉRENCES", ""),
+                "FAITS": sections.get("FAITS", ""),
+                "ETENDUE": sections.get("ETENDUE", ""),
+                "ANALYSES": sections.get("ANALYSES", ""),
+                "ABREVIATIONS": sections.get("ABREVIATIONS", ""),
             }
 
-            # Modify template
+            # Modify and save template
             file_stem = f"Consultation_{scenario.reference}_{scenario.case_label}"
             output_path = output_dir / f"{file_stem}.docx"
 
             if template_path and template_path.exists():
                 try:
-                    modify_docx_template(template_path, output_path, tokens)
+                    modify_docx_template(
+                        template_path,
+                        output_path,
+                        scenario.client_name,
+                        mm_aa,
+                        tokens
+                    )
                     print(f"   💾 Saved: {output_path}")
                 except Exception as exc:
-                    print(f"   ❌ Template modification failed: {exc}")
+                    print(f"   ❌ Failed: {exc}")
             else:
-                print(f"   ⚠️  Template not found: {template_path}")
+                print(f"   ⚠️  Template not found")
 
     finally:
         neo4j.close()
